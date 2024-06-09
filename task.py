@@ -5,6 +5,14 @@ import os.path
 
 
 ROOT = os.path.expanduser(os.path.join('~', '.task'))
+CONTEXT_CONFIGURATION = os.path.join(ROOT, '.conf', '.context')
+
+
+class TaskContext:
+    name: str
+
+    def __init__(self):
+        self.name = None
 
 
 def wrapped_os_mkdir(dirpath: str) -> bool:
@@ -29,6 +37,35 @@ def mkdir(dirpath: str, *, recursive=False) -> bool:
     return created
 
 
+def load_context() -> TaskContext:
+    configuration = TaskContext()
+    if os.path.exists(CONTEXT_CONFIGURATION):
+        for line in open(CONTEXT_CONFIGURATION):
+            key, _, value = line.partition(':')
+            key = key.strip()
+            value = value.strip()
+            if key in configuration.__dict__:
+                configuration.__dict__[key] = value
+    return configuration
+
+
+def save_context(context: TaskContext):
+    if not os.path.exists(CONTEXT_CONFIGURATION):
+        dirpath, _ = os.path.split(CONTEXT_CONFIGURATION)
+        mkdir(dirpath, recursive=True)
+    with open(CONTEXT_CONFIGURATION, 'w') as f:
+        for key, value in context.__dict__.items():
+            if value is not None:
+                f.write(f'{key}: {value}\n')
+
+
+def print_current_context(context: TaskContext):
+    if context.name is None:
+        print('No context selected; set it using `task context set <context-name>`')
+    else:
+        print(context.name)
+
+
 def create_context(name: str) -> bool:
     return mkdir(os.path.join(ROOT, 'context', name), recursive=True)
 
@@ -38,7 +75,16 @@ def list_context():
         print(context)
 
 
+def set_context(context: TaskContext, context_name: str):
+    if os.path.exists(os.path.join(ROOT, 'context', context_name)):
+        context.name = context_name
+    else:
+        print(f'Could not find context {context_name}; create it first using `task context add {context_name}`')
+
+
 def main() -> int:
+    context = load_context()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('mode')
     parser.add_argument('ignore', nargs='*')
@@ -46,12 +92,14 @@ def main() -> int:
     args = parser.parse_args(sys.argv[1:])
     if args.mode == 'context':
         parser = argparse.ArgumentParser()
-        parser.add_argument('mode')
+        parser.add_argument('mode', nargs='?')
         parser.add_argument('ignore', nargs='*')
 
         args = parser.parse_args(sys.argv[2:])
 
-        if args.mode == 'add':
+        if args.mode is None:
+            print_current_context(context)
+        elif args.mode == 'add':
             parser = argparse.ArgumentParser()
             parser.add_argument('context_name')
             parser.add_argument('ignore', nargs='*')
@@ -60,7 +108,15 @@ def main() -> int:
             create_context(args.context_name)
         elif args.mode == 'list':
             list_context()
+        elif args.mode == 'set':
+            parser = argparse.ArgumentParser()
+            parser.add_argument('context_name')
+            parser.add_argument('ignore', nargs='*')
 
+            args = parser.parse_args(sys.argv[3:])
+            set_context(context, args.context_name)
+
+    save_context(context)
 
     return 0
 
