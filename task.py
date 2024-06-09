@@ -33,6 +33,11 @@ def create_context(name: str) -> bool:
     return mkdir(os.path.join(ROOT, 'context', name), recursive=True)
 
 
+def list_context():
+    for context in os.listdir(os.path.join(ROOT, 'context')):
+        print(context)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('mode')
@@ -53,6 +58,8 @@ def main() -> int:
 
             args = parser.parse_args(sys.argv[3:])
             create_context(args.context_name)
+        elif args.mode == 'list':
+            list_context()
 
 
     return 0
