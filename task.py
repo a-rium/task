@@ -169,12 +169,11 @@ def show_task(context: TaskContext, task_name: str):
         print_task(task_directory, 'SOLVE', max_step_width)
 
 
-def list_task(context: TaskContext):
+def list_task(context: TaskContext, *, show_solved: bool, show_all: bool):
     context_directory = os.path.join(ROOT, 'context', context.name)
 
     tasks = os.listdir(context_directory)
     for task in tasks:
-        print(f'TASK {task}')
 
         task_directory = os.path.join(context_directory, task)
         steps = os.listdir(task_directory)
@@ -182,6 +181,12 @@ def list_task(context: TaskContext):
         inner_steps = [int(step) for step in steps if step.isdigit()]
 
         solved = 'SOLVE' in steps
+        if solved and not show_solved and not show_all:
+            continue
+        if not solved and show_solved and not show_all:
+            continue
+
+        print(f'TASK {task}')
         if not solved and len(inner_steps) > 0:
             last_step = str(max(inner_steps))
             max_step_width = max(len(last_step), len('ADD'), len('SOLVE'))
@@ -229,7 +234,7 @@ def handle_mode_show(args, context: TaskContext):
 
 
 def handle_mode_list(args, context: TaskContext):
-    list_task(context)
+    list_task(context, show_solved=args.show_solved, show_all=args.show_all)
 
 
 def main() -> int:
@@ -273,6 +278,10 @@ def main() -> int:
     show_parser.set_defaults(handle=lambda args: handle_mode_show(args, context))
 
     list_parser = subparsers.add_parser('list')
+    list_parser.add_argument('-s', dest='show_solved', action='store_true')
+    list_parser.add_argument('--solved', dest='show_solved', action='store_true')
+    list_parser.add_argument('-a', dest='show_all', action='store_true')
+    list_parser.add_argument('--all', dest='show_all', action='store_true')
     list_parser.set_defaults(handle=lambda args: handle_mode_list(args, context))
 
     args = parser.parse_args(sys.argv[1:])
