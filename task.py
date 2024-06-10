@@ -147,11 +147,12 @@ def read_task_step(task_directory: str, step: str) -> TaskStep:
     return TaskStep(description=description)
 
 
-def show_task(context: TaskContext, task_name: str):
-    def print_task(task_directory: str, step: str, max_step_width: int):
-        task_step = read_task_step(task_directory, step)
-        print(f'{step.rjust(max_step_width, " ")}. {task_step.description}')
+def print_task(task_directory: str, step: str, max_step_width: int):
+    task_step = read_task_step(task_directory, step)
+    print(f'{step.rjust(max_step_width, " ")}. {task_step.description}')
 
+
+def show_task(context: TaskContext, task_name: str):
     task_directory = os.path.join(ROOT, 'context', context.name, task_name)
     if not os.path.exists(task_directory):
         print(f'Task "{task_name}" does not exist; create it first by using `task add {task_name} ...`')
@@ -167,6 +168,33 @@ def show_task(context: TaskContext, task_name: str):
         print_task(task_directory, step, max_step_width)
     if 'SOLVE' in steps:
         print_task(task_directory, 'SOLVE', max_step_width)
+
+
+def list_task(context: TaskContext):
+    context_directory = os.path.join(ROOT, 'context', context.name)
+
+    tasks = os.listdir(context_directory)
+    for task in tasks:
+        print(f'TASK {task}')
+
+        task_directory = os.path.join(context_directory, task)
+        steps = os.listdir(task_directory)
+        steps = [remove_suffix(step, '.task') for step in steps]
+        inner_steps = [int(step) for step in steps if step.isdigit()]
+
+        solved = 'SOLVE' in steps
+        if not solved and len(inner_steps) > 0:
+            last_step = str(max(inner_steps))
+            max_step_width = max(len(last_step), len('ADD'), len('SOLVE'))
+        else:
+            max_step_width = max(len('ADD'), len('SOLVE'))
+        print_task(task_directory, 'ADD', max_step_width)
+        if solved:
+            print_task(task_directory, 'SOLVE', max_step_width)
+        elif len(inner_steps) > 0:
+            last_step = str(max(inner_steps))
+            print_task(task_directory, last_step, max_step_width)
+        print()
 
 
 def main() -> int:
@@ -229,6 +257,8 @@ def main() -> int:
 
         args = parser.parse_args(sys.argv[2:])
         show_task(context, args.task_name)
+    elif args.mode == 'list':
+        list_task(context)
 
     save_context(context)
 
