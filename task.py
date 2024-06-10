@@ -196,7 +196,6 @@ def list_task(context: TaskContext, *, show_solved: bool, show_all: bool):
 
     tasks = os.listdir(context_directory)
     for task in tasks:
-
         task_directory = os.path.join(context_directory, task)
         steps = os.listdir(task_directory)
         steps = [remove_suffix(step, '.task') for step in steps]
