@@ -82,7 +82,11 @@ def print_current_context(context: TaskContext):
 
 
 def create_context(name: str) -> bool:
-    return mkdir(os.path.join(ROOT, 'context', name), recursive=True)
+    context_directory = os.path.join(ROOT, 'context', name)
+    if os.path.exists(context_directory):
+        print(f'Context {context_directory} already exists.')
+        return False
+    return mkdir(context_directory, recursive=True)
 
 
 def list_context():
