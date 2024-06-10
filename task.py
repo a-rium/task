@@ -3,6 +3,7 @@ import sys
 import os
 import os.path
 import string
+import dataclasses
 
 
 ROOT = os.path.expanduser(os.path.join('~', '.task'))
@@ -14,6 +15,11 @@ class TaskContext:
 
     def __init__(self):
         self.name = None
+
+
+@dataclasses.dataclass
+class TaskStep:
+    description: str
 
 
 def wrapped_os_mkdir(dirpath: str) -> bool:
@@ -135,6 +141,34 @@ def solve_task(context: TaskContext, task_name: str, description: str):
         f.write(description)
 
 
+def read_task_step(task_directory: str, step: str) -> TaskStep:
+    with open(os.path.join(task_directory, f'{step}.task'), 'r') as f:
+        description = f.read()
+    return TaskStep(description=description)
+
+
+def show_task(context: TaskContext, task_name: str):
+    def print_task(task_directory: str, step: str, max_step_width: int):
+        task_step = read_task_step(task_directory, step)
+        print(f'{step.rjust(max_step_width, " ")}. {task_step.description}')
+
+    task_directory = os.path.join(ROOT, 'context', context.name, task_name)
+    if not os.path.exists(task_directory):
+        print(f'Task "{task_name}" does not exist; create it first by using `task add {task_name} ...`')
+        return
+
+    steps = os.listdir(task_directory)
+    steps = [remove_suffix(step, '.task') for step in steps]
+    inner_steps = [step for step in steps if step.isdigit()]
+    max_step_width = max(*(len(step) for step in inner_steps), len('ADD'), len('SOLVE'))
+
+    print_task(task_directory, 'ADD', max_step_width)
+    for step in inner_steps:
+        print_task(task_directory, step, max_step_width)
+    if 'SOLVE' in steps:
+        print_task(task_directory, 'SOLVE', max_step_width)
+
+
 def main() -> int:
     context = load_context()
 
@@ -189,6 +223,12 @@ def main() -> int:
 
         args = parser.parse_args(sys.argv[2:])
         solve_task(context, args.task_name, args.description)
+    elif args.mode == 'show':
+        parser = argparse.ArgumentParser()
+        parser.add_argument('task_name')
+
+        args = parser.parse_args(sys.argv[2:])
+        show_task(context, args.task_name)
 
     save_context(context)
 
