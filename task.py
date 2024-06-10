@@ -125,6 +125,23 @@ def add_task_step(context: TaskContext, task_name: str, description: str):
         f.write(description)
 
 
+def redact_task_step(context: TaskContext, task_name: str, description: str):
+    task_directory = os.path.join(ROOT, 'context', context.name, task_name)
+    if not os.path.exists(task_directory):
+        print(f'Task "{task_name}" does not exist; create it first by using `task add {task_name} ...`')
+        return
+
+    steps = os.listdir(task_directory)
+    if 'SOLVE.task' in steps:
+        with open(os.path.join(task_directory, 'SOLVE.task'), 'w') as f:
+            f.write(description)
+    steps = [remove_suffix(step, '.task') for step in steps]
+    steps = [int(step) for step in steps if step.isdigit()]
+    next_step = str(max(steps)) if len(steps) > 0 else 'ADD'
+
+    with open(os.path.join(task_directory, f'{next_step}.task'), 'w') as f:
+        f.write(description)
+
 def solve_task(context: TaskContext, task_name: str, description: str):
     task_directory = os.path.join(ROOT, 'context', context.name, task_name)
     if not os.path.exists(task_directory):
@@ -225,6 +242,10 @@ def handle_mode_step(args, context: TaskContext):
     add_task_step(context, args.task_name, args.description)
 
 
+def handle_mode_redact(args, context: TaskContext):
+    redact_task_step(context, args.task_name, args.description)
+
+
 def handle_mode_solve(args, context: TaskContext):
     solve_task(context, args.task_name, args.description)
 
@@ -267,6 +288,11 @@ def main() -> int:
     step_parser.add_argument('task_name')
     step_parser.add_argument('description')
     step_parser.set_defaults(handle=lambda args: handle_mode_step(args, context))
+
+    redact_parser = subparsers.add_parser('redact')
+    redact_parser.add_argument('task_name')
+    redact_parser.add_argument('description')
+    redact_parser.set_defaults(handle=lambda args: handle_mode_redact(args, context))
 
     solve_parser = subparsers.add_parser('solve')
     solve_parser.add_argument('task_name')
