@@ -146,7 +146,7 @@ def read_task_step(task_directory: str, step: str) -> TaskStep:
     return TaskStep(description=description)
 
 
-def print_task(task_directory: str, step: str, max_step_width: int):
+def print_task_step(task_directory: str, step: str, max_step_width: int):
     task_step = read_task_step(task_directory, step)
     print(f'{step.rjust(max_step_width, " ")}. {task_step.description}')
 
@@ -162,11 +162,11 @@ def show_task(context: TaskContext, task_name: str):
     inner_steps = [step for step in steps if step.isdigit()]
     max_step_width = max(*(len(step) for step in inner_steps), len('ADD'), len('SOLVE'))
 
-    print_task(task_directory, 'ADD', max_step_width)
+    print_task_step(task_directory, 'ADD', max_step_width)
     for step in inner_steps:
-        print_task(task_directory, step, max_step_width)
+        print_task_step(task_directory, step, max_step_width)
     if 'SOLVE' in steps:
-        print_task(task_directory, 'SOLVE', max_step_width)
+        print_task_step(task_directory, 'SOLVE', max_step_width)
 
 
 def list_task(context: TaskContext, *, show_solved: bool, show_all: bool):
@@ -192,12 +192,12 @@ def list_task(context: TaskContext, *, show_solved: bool, show_all: bool):
             max_step_width = max(len(last_step), len('ADD'), len('SOLVE'))
         else:
             max_step_width = max(len('ADD'), len('SOLVE'))
-        print_task(task_directory, 'ADD', max_step_width)
+        print_task_step(task_directory, 'ADD', max_step_width)
         if solved:
-            print_task(task_directory, 'SOLVE', max_step_width)
+            print_task_step(task_directory, 'SOLVE', max_step_width)
         elif len(inner_steps) > 0:
             last_step = str(max(inner_steps))
-            print_task(task_directory, last_step, max_step_width)
+            print_task_step(task_directory, last_step, max_step_width)
         print()
 
 
