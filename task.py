@@ -146,6 +146,7 @@ def redact_task_step(context: TaskContext, task_name: str, description: str):
     with open(os.path.join(task_directory, f'{next_step}.task'), 'w') as f:
         f.write(description)
 
+
 def solve_task(context: TaskContext, task_name: str, description: str):
     task_directory = os.path.join(ROOT, 'context', context.name, task_name)
     if not os.path.exists(task_directory):
