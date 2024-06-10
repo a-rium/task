@@ -196,68 +196,87 @@ def list_task(context: TaskContext):
         print()
 
 
+def handle_mode_context(context: TaskContext):
+    print_current_context(context)
+
+
+def handle_mode_context_add(args):
+    create_context(args.context_name)
+
+
+def handle_mode_context_list(args):
+    list_context()
+
+
+def handle_mode_context_set(args, context: TaskContext):
+    set_context(context, args.context_name)
+
+
+def handle_mode_add(args, context: TaskContext):
+    add_task(context, args.task_name, args.description)
+
+
+def handle_mode_step(args, context: TaskContext):
+    add_task_step(context, args.task_name, args.description)
+
+
+def handle_mode_solve(args, context: TaskContext):
+    solve_task(context, args.task_name, args.description)
+
+
+def handle_mode_show(args, context: TaskContext):
+    show_task(context, args.task_name)
+
+
+def handle_mode_list(args, context: TaskContext):
+    list_task(context)
+
+
 def main() -> int:
     context = load_context()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode')
-    parser.add_argument('ignore', nargs='*')
+    subparsers = parser.add_subparsers()
+
+    context_parser = subparsers.add_parser('context')
+    context_parser.set_defaults(handle=lambda args: handle_mode_context(context))
+    context_subparsers = context_parser.add_subparsers()
+
+    context_add_parser = context_subparsers.add_parser('add')
+    context_add_parser.add_argument('context_name')
+    context_add_parser.set_defaults(handle=handle_mode_context_add)
+
+    context_list_parser = context_subparsers.add_parser('list')
+    context_list_parser.set_defaults(handle=handle_mode_context_list)
+
+    context_set_parser = context_subparsers.add_parser('set')
+    context_set_parser.add_argument('context_name')
+    context_set_parser.set_defaults(handle=lambda args: handle_mode_context_set(args, context))
+
+    add_parser = subparsers.add_parser('add')
+    add_parser.add_argument('task_name')
+    add_parser.add_argument('description')
+    add_parser.set_defaults(handle=lambda args: handle_mode_add(args, context))
+
+    step_parser = subparsers.add_parser('step')
+    step_parser.add_argument('task_name')
+    step_parser.add_argument('description')
+    step_parser.set_defaults(handle=lambda args: handle_mode_step(args, context))
+
+    solve_parser = subparsers.add_parser('solve')
+    solve_parser.add_argument('task_name')
+    solve_parser.add_argument('description')
+    solve_parser.set_defaults(handle=lambda args: handle_mode_solve(args, context))
+
+    show_parser = subparsers.add_parser('show')
+    show_parser.add_argument('task_name')
+    show_parser.set_defaults(handle=lambda args: handle_mode_show(args, context))
+
+    list_parser = subparsers.add_parser('list')
+    list_parser.set_defaults(handle=lambda args: handle_mode_list(args, context))
 
     args = parser.parse_args(sys.argv[1:])
-    if args.mode == 'context':
-        parser = argparse.ArgumentParser()
-        parser.add_argument('mode', nargs='?')
-        parser.add_argument('ignore', nargs='*')
-
-        args = parser.parse_args(sys.argv[2:])
-
-        if args.mode is None:
-            print_current_context(context)
-        elif args.mode == 'add':
-            parser = argparse.ArgumentParser()
-            parser.add_argument('context_name')
-            parser.add_argument('ignore', nargs='*')
-
-            args = parser.parse_args(sys.argv[3:])
-            create_context(args.context_name)
-        elif args.mode == 'list':
-            list_context()
-        elif args.mode == 'set':
-            parser = argparse.ArgumentParser()
-            parser.add_argument('context_name')
-            parser.add_argument('ignore', nargs='*')
-
-            args = parser.parse_args(sys.argv[3:])
-            set_context(context, args.context_name)
-    elif args.mode == 'add':
-        parser = argparse.ArgumentParser()
-        parser.add_argument('task_name')
-        parser.add_argument('description')
-
-        args = parser.parse_args(sys.argv[2:])
-        add_task(context, args.task_name, args.description)
-    elif args.mode == 'step':
-        parser = argparse.ArgumentParser()
-        parser.add_argument('task_name')
-        parser.add_argument('description')
-
-        args = parser.parse_args(sys.argv[2:])
-        add_task_step(context, args.task_name, args.description)
-    elif args.mode == 'solve':
-        parser = argparse.ArgumentParser()
-        parser.add_argument('task_name')
-        parser.add_argument('description')
-
-        args = parser.parse_args(sys.argv[2:])
-        solve_task(context, args.task_name, args.description)
-    elif args.mode == 'show':
-        parser = argparse.ArgumentParser()
-        parser.add_argument('task_name')
-
-        args = parser.parse_args(sys.argv[2:])
-        show_task(context, args.task_name)
-    elif args.mode == 'list':
-        list_task(context)
+    args.handle(args)
 
     save_context(context)
 
