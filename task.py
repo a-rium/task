@@ -120,6 +120,21 @@ def add_task_step(context: TaskContext, task_name: str, description: str):
         f.write(description)
 
 
+def solve_task(context: TaskContext, task_name: str, description: str):
+    task_directory = os.path.join(ROOT, 'context', context.name, task_name)
+    if not os.path.exists(task_directory):
+        print(f'Task "{task_name}" does not exist; create it first by using `task add {task_name} ...`')
+        return
+
+    solve_step = os.path.join(task_directory, 'SOLVE.task')
+    if os.path.exists(solve_step):
+        print(f'Task "{task_name}" has been already marked as solved.')
+        return
+
+    with open(solve_step, 'w') as f:
+        f.write(description)
+
+
 def main() -> int:
     context = load_context()
 
@@ -167,6 +182,13 @@ def main() -> int:
 
         args = parser.parse_args(sys.argv[2:])
         add_task_step(context, args.task_name, args.description)
+    elif args.mode == 'solve':
+        parser = argparse.ArgumentParser()
+        parser.add_argument('task_name')
+        parser.add_argument('description')
+
+        args = parser.parse_args(sys.argv[2:])
+        solve_task(context, args.task_name, args.description)
 
     save_context(context)
 
