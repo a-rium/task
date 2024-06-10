@@ -2,6 +2,7 @@ import argparse
 import sys
 import os
 import os.path
+import string
 
 
 ROOT = os.path.expanduser(os.path.join('~', '.task'))
@@ -35,6 +36,15 @@ def mkdir(dirpath: str, *, recursive=False) -> bool:
     else:
         created = wrapped_os_mkdir(dirpath)
     return created
+
+
+def remove_suffix(text: str, suffix: str) -> bool:
+    if len(text) == 0:
+        return text
+    idx = text.rfind(suffix)
+    if idx == len(text) - len(suffix):
+        return text[:-len(suffix)]
+    return text
 
 
 def load_context() -> TaskContext:
@@ -93,6 +103,23 @@ def add_task(context: TaskContext, task_name: str, description: str):
         f.write(description)
 
 
+def add_task_step(context: TaskContext, task_name: str, description: str):
+    task_directory = os.path.join(ROOT, 'context', context.name, task_name)
+    if not os.path.exists(task_directory):
+        print(f'Task "{task_name}" does not exist; create it first by using `task add {task_name} ...`')
+        return
+
+    steps = os.listdir(task_directory)
+    if 'SOLVE.task' in steps:
+        print(f'Task "{task_name}" has been already marked as solved.')
+    steps = [remove_suffix(step, '.task') for step in steps]
+    steps = [int(step) for step in steps if step.isdigit()]
+    next_step = max(steps) + 1 if len(steps) > 0 else 1
+
+    with open(os.path.join(task_directory, f'{next_step}.task'), 'w') as f:
+        f.write(description)
+
+
 def main() -> int:
     context = load_context()
 
@@ -133,7 +160,13 @@ def main() -> int:
 
         args = parser.parse_args(sys.argv[2:])
         add_task(context, args.task_name, args.description)
+    elif args.mode == 'step':
+        parser = argparse.ArgumentParser()
+        parser.add_argument('task_name')
+        parser.add_argument('description')
 
+        args = parser.parse_args(sys.argv[2:])
+        add_task_step(context, args.task_name, args.description)
 
     save_context(context)
 
